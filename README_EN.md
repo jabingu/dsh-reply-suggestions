@@ -8,8 +8,8 @@ A composer suggestion plugin for [DeepSeek Harness](https://github.com/deepseek-
 
 | Item | Current version |
 | --- | --- |
-| Plugin | `0.1.17` |
-| Verified official desktop versions | `0.2.0-rc.2`, `0.2.1-rc.2` |
+| Plugin | `0.1.18` |
+| Verified official desktop versions | `0.2.0-rc.2`, `0.2.1-rc.2`, `0.2.1-rc.5` |
 | License | [MIT](./LICENSE) |
 
 ## Features
@@ -33,7 +33,7 @@ Generated from the actual 0.1.16 client using its test fixture, then placed in a
 ### Install from GitHub
 
 1. Open **Plugins** in DSH and check whether `dsh-reply-suggestions` is already installed. If it is, use the update action rather than adding it again.
-2. Confirm that the official desktop version is `0.2.0-rc.2` or `0.2.1-rc.2`.
+2. Confirm that the official desktop version falls within the compatibility range below. Version `0.2.1-rc.5` has been checked.
 3. Select **Add plugin** and enter this repository address:
 
    ```text
@@ -43,9 +43,9 @@ Generated from the actual 0.1.16 client using its test fixture, then placed in a
 4. Follow the app's prompts to load and enable the plugin, then restart DSH.
 5. Complete a regular conversation turn, leave the composer empty, and wait for a gray suggestion.
 
-The repository includes prebuilt `lib/` files, so a manual build is unnecessary. DSH peers explicitly support `0.2.0-rc.2` and `0.2.1-rc.2`; check the interfaces before using another version.
+The repository includes prebuilt `lib/` files, so a manual build is unnecessary. The DSH peer range is `0.2.0-rc.2 || >=0.2.1-rc.2 <0.2.2-0`: it retains the old rc.2 and accepts the 0.2.1 release line from `0.2.1-rc.2`, including later RCs and stable `0.2.1`. All `0.2.2` prereleases and stable releases require a separate interface review.
 
-If DSH `0.2.1-rc.2` reports that plugin `0.1.16` is incompatible, update the plugin to `0.1.17`, fully exit DSH, then restart it. For a linked local installation, update the linked directory and restart. Existing usage records are retained.
+If DSH `0.2.1-rc.5` reports that plugin `0.1.17` is incompatible, update the plugin to `0.1.18`, fully exit DSH, then restart it. For a linked local installation, update the linked directory and restart. Existing usage records are retained. Later RCs in the same line are no longer blocked solely by their version number; the versions actually checked are listed above.
 
 ### Install from a local directory
 
@@ -193,12 +193,13 @@ scripts/test.mjs     Cross-platform test file enumeration and runner
 tests/               Behavior and client lifecycle tests
 ```
 
-The implementation uses official Typert/Gateway RPC, `llm.stream`, the `conversation.input.overlay` slot, session snapshots, and draft actions. Composer DOM markers, draft actions and the detail-page slot have been checked in both supported versions and need review when those change.
+The implementation uses official Typert/Gateway RPC, `llm.stream`, the `conversation.input.overlay` slot, session snapshots, and draft actions. Composer DOM markers, draft actions and the detail-page slot have been checked in supported versions and need review when their interfaces change.
 
 ## Validation scope
 
+- Version `0.1.18` fixes the exact-version-list rejection on DSH `0.2.1-rc.5`. Its range and boundaries pass both the compatibility evaluator shipped in rc.5 and npm's default SemVer rules. Recommendation, usage, price update and restart RPC checks pass against the new official libraries, using a stub model and price response. Desktop visual and real IME acceptance have not been repeated in this round.
 - Version `0.1.17` fixes the load rejection caused by `0.1.16` pinning the old DSH version. It explicitly supports `0.2.0-rc.2` and `0.2.1-rc.2` and passes the compatibility evaluator shipped in the new DSH. New Cordis, Typert, Host/Client Gateway and home-paths libraries verify recommendation RPC, usage, costs, price updates, schedule saving and restart recovery using a stub model and price response. Real records are unchanged; full desktop visual and real IME acceptance have not been repeated on the new release.
-- Node 22.23.3 and 24.16.0 each pass 66 automated tests, covering recommendation interaction, placeholder lifecycle, usage/lifetime deduplication, date boundaries, costs, price updates, schedule persistence/failure/restart and statistics disposal. Version 0.1.17 verified on 2026-10-18.
+- Node 22.23.3 and 24.16.0 each pass 66 automated tests, covering recommendation interaction, placeholder lifecycle, usage/lifetime deduplication, date boundaries, costs, price updates, schedule persistence/failure/restart and statistics disposal. Version 0.1.18 verified on 2026-11-01.
 - Version `0.1.16` fixes duplicate model calls for concurrent identical requests, overlapping suggestions from duplicate composer mounts, and incorrectly cleared corrupt-price-cache warnings. Both Node versions pass RPC, cache accounting and restart checks using actual rc.2 libraries with a stub model; desktop visual acceptance remains separate.
 - Actual plugin fiber mounting, RPC, and disposal were verified using Cordis, Typert, and Host/Client Gateway from the official rc.2 installation, with a stub model.
 - Version `0.1.2` was tested in the real rc.2 desktop app for generation, display, first-Enter insertion, editing, Shift+Enter line breaks, sending, Escape, and session switching.

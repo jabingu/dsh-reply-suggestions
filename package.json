@@ -1,6 +1,6 @@
 {
   "name": "dsh-reply-suggestions",
-  "version": "0.1.17",
+  "version": "0.1.18",
   "icon": "./icon.png",
   "description": "Suggest your next question from the conversation. Press Enter to fill it in, then edit and send.",
   "type": "module",
@@ -29,10 +29,10 @@
     }
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh": "0.2.0-rc.2 || 0.2.1-rc.2",
+    "@deepseek-ai/dsh": "0.2.0-rc.2 || >=0.2.1-rc.2 <0.2.2-0",
     "@deepseek-ai/cordis": "~4.0.4",
-    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2 || 0.2.1-rc.2",
-    "@deepseek-ai/dsh-home-paths": "0.2.0-rc.2 || 0.2.1-rc.2"
+    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2 || >=0.2.1-rc.2 <0.2.2-0",
+    "@deepseek-ai/dsh-home-paths": "0.2.0-rc.2 || >=0.2.1-rc.2 <0.2.2-0"
   },
   "scripts": {
     "build": "node scripts/build.mjs",
