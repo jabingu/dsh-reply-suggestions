@@ -8,7 +8,7 @@ A composer suggestion plugin for [DeepSeek Harness](https://github.com/deepseek-
 
 | Item | Current version |
 | --- | --- |
-| Plugin | `0.1.19` |
+| Plugin | `0.1.20` |
 | Verified official desktop versions | `0.2.0-rc.2`, `0.2.1-rc.2`, `0.2.1-rc.5` |
 | License | [MIT](./LICENSE) |
 
@@ -90,7 +90,13 @@ Compared with the old version, the context cap drops from 14,000 to 1,600 charac
 
 Open **Plugins → Reply Suggestions** to see lifetime totals plus four periods, including recorded tokens, input (including provider cache)/output tokens, request counts, and missing usage, failures and cancellations.
 
-The lifetime card includes all valid records since tracking began, including those older than 30 days. Deduplicate requests directly instead of adding overlapping period totals. Costs use each request's saved prices; missing usage/prices remain unknown or partial. Usage from before tracking began cannot be recovered.
+Individual request details are kept for the most recent **30 calendar days, including today**. Older details are folded into a cumulative summary and removed. Lifetime totals combine that summary with retained details, so cleanup does not reduce totals or add overlapping time windows together. Missing usage/prices remain unknown or partial. Usage from before tracking began cannot be recovered.
+
+Cleanup runs on startup, new writes, statistics reads and hourly checks. It pauses while DSH is closed and catches up after restart. Calendar-day grouping uses the Host's local timezone.
+
+After upgrading, fully exit and restart all DSH instances sharing this data directory so they use the same summary format and writer locks.
+
+The cumulative summary retains token counts, request/status counts and total estimates, rather than older per-request models, price snapshots or identifiers. Costs older than 30 days can no longer be recalculated request by request. Retained details continue to include start times and saved prices.
 
 Two cards keep the panel compact: the left card defaults to today and offers yesterday, last 7 days and last 30 days in a dropdown; lifetime stays on the right. Switching uses the loaded snapshot without extra model calls or statistics requests.
 
@@ -104,7 +110,7 @@ Total, input and output token counts automatically use K (thousands) or M (milli
 - Records survive restarts, and the first recorded timestamp is shown. Historical usage from before this feature cannot be recovered.
 - Refresh every 15 seconds while the page is open, or click Refresh. Reading statistics does not call a model.
 
-Records live at `storages/dsh-reply-suggestions/usage.jsonl` under the Harness data directory, respecting `DSH_HOME` and defaulting to `~/.dsh`. Profiles sharing that directory share this plugin's statistics. Records contain an ID, timestamp, request status, and token counts. Since 0.1.8 they also store the requested provider/model and price version, with no conversation text, attachments, or credentials. Read/write problems are visibly marked as potentially incomplete statistics.
+Records live at `storages/dsh-reply-suggestions/usage.jsonl` under the Harness data directory, respecting `DSH_HOME` and defaulting to `~/.dsh`. Profiles sharing that directory share these statistics. The file contains a cumulative summary header when needed, followed by retained details; no conversation text, attachments or credentials. DSH file locks coordinate instances, and summary and retained details are committed together by atomic replacement. Corrupt history defers cleanup while preserving the file and allowing new usage to append. Read/write or cleanup failures remain visible and are retried.
 
 ### Cost estimates
 
@@ -202,10 +208,11 @@ The implementation uses official Typert/Gateway RPC, `llm.stream`, the `conversa
 
 ## Validation scope
 
+- Version `0.1.20` limits details to 30 calendar days while preserving cumulative totals. Tests cover day boundaries, repeated cleanup, aggregate merging, concurrency, failed writes and corrupt logs. Real DSH lock helpers verify two independent writer processes and dead-writer lock recovery.
 - Version `0.1.19` calculates one amount from each request's start time, holidays and saved prices. Legacy records remain intact with a visible completion-time assumption. Checks cover rate boundaries, timezones, holidays, midnight, price updates, missing calendars and mixed Host/Client versions.
 - Version `0.1.18` fixes the exact-version-list rejection on DSH `0.2.1-rc.5`. Its range and boundaries pass both the compatibility evaluator shipped in rc.5 and npm's default SemVer rules. Recommendation, usage, price update and restart RPC checks pass against the new official libraries, using a stub model and price response. Desktop visual and real IME acceptance have not been repeated in this round.
 - Version `0.1.17` fixes the load rejection caused by `0.1.16` pinning the old DSH version. It explicitly supports `0.2.0-rc.2` and `0.2.1-rc.2` and passes the compatibility evaluator shipped in the new DSH. New Cordis, Typert, Host/Client Gateway and home-paths libraries verify recommendation RPC, usage, costs, price updates, schedule saving and restart recovery using a stub model and price response. Real records are unchanged; full desktop visual and real IME acceptance have not been repeated on the new release.
-- Node 22.23.3 and 24.16.0 each pass 79 automated tests, covering recommendation interaction, placeholder lifecycle, usage/lifetime deduplication, date boundaries, scalar costs, holidays, price updates, schedule persistence/failure/restart and statistics disposal. Version 0.1.19 verified on 2026-11-01.
+- Node 22.23.3 and 24.16.0 each pass 93 automated tests, covering recommendation interaction, placeholder lifecycle, usage/lifetime deduplication, 30-day retention, date boundaries, scalar costs, holidays, price updates, schedule persistence/failure/restart and statistics disposal. Version 0.1.20 verified on 2026-11-01.
 - Version `0.1.16` fixes duplicate model calls for concurrent identical requests, overlapping suggestions from duplicate composer mounts, and incorrectly cleared corrupt-price-cache warnings. Both Node versions pass RPC, cache accounting and restart checks using actual rc.2 libraries with a stub model; desktop visual acceptance remains separate.
 - Actual plugin fiber mounting, RPC, and disposal were verified using Cordis, Typert, and Host/Client Gateway from the official rc.2 installation, with a stub model.
 - Version `0.1.2` was tested in the real rc.2 desktop app for generation, display, first-Enter insertion, editing, Shift+Enter line breaks, sending, Escape, and session switching.

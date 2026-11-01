@@ -1,5 +1,6 @@
 import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
 import { resolveDshHome } from '@deepseek-ai/dsh-home-paths';
+import { withFileLock, writeFileAtomic } from '@deepseek-ai/dsh-atomic-write';
 import { join } from 'node:path';
 import { PACKAGE, SERVICE, descriptor, usageDescriptor, updatePricesDescriptor, setPriceScheduleDescriptor } from './common.mjs';
 import { createRecommender } from './engine.mjs';
@@ -18,11 +19,15 @@ class ReplySuggestions extends TypertRemoteService {
     });
     this.usageStore = createUsageStore(join(directory, 'usage.jsonl'), {
       prices: this.prices,
+      retention: { withFileLock, writeFileAtomic },
       warn: error => console.warn('[reply-suggestions] Usage persistence unavailable:', error?.code ?? 'unknown'),
     });
     this.generate = createRecommender(ctx.llm, config, this.usageStore);
     ctx.effect(() => {
-      const check = this.checkPrices = () => { this.prices.refresh().catch(() => {}); };
+      const check = this.checkPrices = () => {
+        this.prices.refresh().catch(() => {});
+        this.usageStore.maintain().catch(() => {});
+      };
       check(); // The store restores UI preferences before deciding whether to check.
       const timer = setInterval(check, 3600000);
       timer?.unref?.();

@@ -122,6 +122,15 @@ test('Manual/periodic refresh use the usage RPC and disposal aborts a late respo
   ui.pending[2].resolve({ ok: true, value: null }); await settle();
 });
 
+test('The detail page explains the 30-day detail limit and cumulative history; cleanup failures stay visible', async () => {
+  const ui = await mountUsage(); ui.select({ kind: 'bundle', pkg: { name: 'dsh-reply-suggestions' } }); ui.flush();
+  const value = sample(); value.retention = { days: 30, retainedFrom: '2026-09-15', archivedRequests: 1, cleanupPending: true };
+  ui.pending[0].resolve({ ok: true, value }); await settle(); ui.flush();
+  assert.match(ui.text(ui.tree), /逐条明细保留最近 30 天/); assert.match(ui.text(ui.tree), /历史总量不减少/);
+  assert.match(ui.text(ui.tree), /已汇总 1 次/); assert.match(ui.text(ui.tree), /明细清理暂未完成/);
+  assert.match(ui.text(ui.find('data-usage-period', 'all')), /历史总量.*120/); ui.unmount();
+});
+
 test('A stale Host range is never silently displayed as the lower single amount', async () => {
   const ui = await mountUsage(); ui.select({ kind: 'bundle', pkg: { name: 'dsh-reply-suggestions' } }); ui.flush();
   const value = sample();

@@ -115,6 +115,10 @@ export function validateUsageSnapshot(value) {
     validateUsagePeriod(value.periods[i], USAGE_PERIODS[i]);
   }
   if (value.lifetime !== undefined) validateUsagePeriod(value.lifetime, 'all');
+  if (value.retention !== undefined && (value.retention?.days !== 30
+    || typeof value.retention.retainedFrom !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.retention.retainedFrom)
+    || !tokenCount(value.retention.archivedRequests) || value.retention.archivedRequests > (value.lifetime?.requests ?? 0)
+    || typeof value.retention.cleanupPending !== 'boolean')) throw TypeError('Invalid retention metadata');
   if (value.pricing?.holidayYears !== undefined && (!Array.isArray(value.pricing.holidayYears)
     || value.pricing.holidayYears.some(year => !Number.isInteger(year) || year < 2000 || year > 9999))) throw new TypeError('Invalid holiday calendar metadata');
   if (value.pricing !== undefined && (value.pricing?.currency !== 'CNY'
