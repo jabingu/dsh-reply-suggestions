@@ -97,6 +97,10 @@ function validateUsagePeriod(period, id) {
       || ['pricedRequests', 'assumedRequests', 'unpricedRequests'].some(key => !tokenCount(cost[key]))
       || cost.pricedRequests + cost.unpricedRequests !== period.requests
       || cost.assumedRequests > cost.pricedRequests) throw new TypeError('Invalid cost estimate');
+    if (cost.cny !== undefined && (!Number.isFinite(cost.cny) || cost.cny < 0
+      || cost.minCny !== cost.cny || cost.maxCny !== cost.cny)) throw new TypeError('Invalid single cost estimate');
+    if (cost.legacyTimeRequests !== undefined && (!tokenCount(cost.legacyTimeRequests)
+      || cost.legacyTimeRequests > cost.pricedRequests)) throw new TypeError('Invalid legacy time count');
   }
 }
 
@@ -111,6 +115,8 @@ export function validateUsageSnapshot(value) {
     validateUsagePeriod(value.periods[i], USAGE_PERIODS[i]);
   }
   if (value.lifetime !== undefined) validateUsagePeriod(value.lifetime, 'all');
+  if (value.pricing?.holidayYears !== undefined && (!Array.isArray(value.pricing.holidayYears)
+    || value.pricing.holidayYears.some(year => !Number.isInteger(year) || year < 2000 || year > 9999))) throw new TypeError('Invalid holiday calendar metadata');
   if (value.pricing !== undefined && (value.pricing?.currency !== 'CNY'
     || !/^\d{4}-\d{2}-\d{2}$/.test(value.pricing.checkedAt)
     || value.pricing.source !== 'https://api-docs.deepseek.com/zh-cn/quick_start/pricing'

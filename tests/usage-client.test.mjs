@@ -91,6 +91,8 @@ test('Statistics show one selectable period and lifetime; all four ranges remain
   assert.match(today, /120/); assert.match(today, /Token \+ 未知/);
   assert.match(today, /输入（含缓存）100/); assert.match(today, /未返回用量 1 次/);
   assert.match(today, /估算费用.*（部分）/); assert.match(today, /历史 1 次按 Flash 假设估算/);
+  assert.doesNotMatch(ui.text(ui.find('data-usage-cost', 'today')), /～/);
+  assert.match(today, /历史 1 次按记录时间估算时段/);
   assert.match(today, /未计入费用 1 次/);
   assert.match(ui.text(ui.tree), /不代表实际账单或套餐扣费/);
   assert.equal(ui.find('href', 'https://api-docs.deepseek.com/zh-cn/quick_start/pricing').props.rel, 'noreferrer');
@@ -118,6 +120,27 @@ test('Manual/periodic refresh use the usage RPC and disposal aborts a late respo
   ui.tick(); assert.equal(ui.pending.length, 3);
   ui.unmount(); assert.equal(ui.intervals.size, 0); assert.equal(ui.pending[2].signal.aborted, true);
   ui.pending[2].resolve({ ok: true, value: null }); await settle();
+});
+
+test('A stale Host range is never silently displayed as the lower single amount', async () => {
+  const ui = await mountUsage(); ui.select({ kind: 'bundle', pkg: { name: 'dsh-reply-suggestions' } }); ui.flush();
+  const value = sample();
+  for (const period of [...value.periods, value.lifetime]) {
+    delete period.cost.cny; period.cost.maxCny = period.cost.minCny * 2;
+  }
+  ui.pending[0].resolve({ ok: true, value }); await settle(); ui.flush();
+  const cost = ui.text(ui.find('data-usage-cost', 'today'));
+  assert.match(cost, /请重启 DSH/); assert.doesNotMatch(cost, /¥|～/); ui.unmount();
+});
+
+test('Unknown calendar years do not display unknown paid requests as free', async () => {
+  const ui = await mountUsage(); ui.select({ kind: 'bundle', pkg: { name: 'dsh-reply-suggestions' } }); ui.flush();
+  const value = summarizeUsage([{ version: 1, id: 'unknown', at: '2027-01-04T02:00:00Z', status: 'complete',
+    usage: { inputTokens: 100, outputTokens: 20, cacheReadTokens: 0, cacheWriteTokens: 0, totalTokens: 120 } }],
+  { now: new Date('2027-01-04T03:00:00Z'), timeZone: 'UTC' });
+  ui.pending[0].resolve({ ok: true, value }); await settle(); ui.flush();
+  assert.match(ui.text(ui.find('data-usage-cost', 'today')), /暂无可估算记录/);
+  assert.match(ui.text(ui.tree), /节假日日历覆盖 2026 年/); ui.unmount();
 });
 
 test('RPC and persistence failures are shown without invented usage', async () => {

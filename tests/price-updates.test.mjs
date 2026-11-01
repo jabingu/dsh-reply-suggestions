@@ -104,9 +104,9 @@ test('Updated rates are frozen in usage records and survive reload without repri
   const records = usageIO.contents.split('\n').filter(Boolean).map(JSON.parse);
   assert.equal(records[0].priceSnapshot.offPeak.input, 1); assert.equal(records[1].priceSnapshot.offPeak.input, 3);
   assert.equal(usageIO.contents.includes('PRIVATE'), false);
-  assert.equal(estimateCost(records[0]).minCny, 0.00014); assert.equal(estimateCost(records[1]).maxCny, 0.00078);
+  assert.equal(estimateCost(records[0]).cny, 0.00028); assert.equal(estimateCost(records[1]).cny, 0.00078);
   const result = await createUsageStore('usage', { io: usageIO, clock: () => at, timeZone: 'UTC' }).snapshot();
-  assert.ok(Math.abs(result.periods[0].cost.minCny - 0.00048) < 1e-12);
+  assert.ok(Math.abs(result.periods[0].cost.cny - 0.00106) < 1e-12);
   assert.equal(result.periods[0].cost.assumedRequests, 0);
   const restored = createPriceStore('prices', { io: priceIO, clock: () => at });
   assert.deepEqual(await restored.quote('deepseek', 'deepseek-flash'), quote);

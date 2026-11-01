@@ -8,7 +8,7 @@ A composer suggestion plugin for [DeepSeek Harness](https://github.com/deepseek-
 
 | Item | Current version |
 | --- | --- |
-| Plugin | `0.1.18` |
+| Plugin | `0.1.19` |
 | Verified official desktop versions | `0.2.0-rc.2`, `0.2.1-rc.2`, `0.2.1-rc.5` |
 | License | [MIT](./LICENSE) |
 
@@ -45,7 +45,7 @@ Generated from the actual 0.1.16 client using its test fixture, then placed in a
 
 The repository includes prebuilt `lib/` files, so a manual build is unnecessary. The DSH peer range is `0.2.0-rc.2 || >=0.2.1-rc.2 <0.2.2-0`: it retains the old rc.2 and accepts the 0.2.1 release line from `0.2.1-rc.2`, including later RCs and stable `0.2.1`. All `0.2.2` prereleases and stable releases require a separate interface review.
 
-If DSH `0.2.1-rc.5` reports that plugin `0.1.17` is incompatible, update the plugin to `0.1.18`, fully exit DSH, then restart it. For a linked local installation, update the linked directory and restart. Existing usage records are retained. Later RCs in the same line are no longer blocked solely by their version number; the versions actually checked are listed above.
+If DSH `0.2.1-rc.5` reports that an old plugin is incompatible, update the plugin to the current version, fully exit DSH, then restart it. For a linked local installation, update the linked directory and restart. Existing usage records are retained. Later RCs in the same line are no longer blocked solely by their version number; the versions actually checked are listed above.
 
 ### Install from a local directory
 
@@ -108,18 +108,22 @@ Records live at `storages/dsh-reply-suggestions/usage.jsonl` under the Harness d
 
 ### Cost estimates
 
-Each card shows a CNY API list-price range, from off-peak to peak. Statistics read local prices; updating prices reads the official webpage without calling a model. Built-in rates below were checked against the [official DeepSeek pricing page](https://api-docs.deepseek.com/zh-cn/quick_start/pricing) on 2026-10-14, in CNY per million tokens. After a successful update, new requests use the retrieved rates:
+Each card shows one CNY API estimate: calculate each request from its start time in Beijing, the holiday calendar and its saved price snapshot, then sum the results. Statistics read local prices; updating prices reads the official webpage without calling a model. Built-in rates below were checked against the [official DeepSeek pricing page](https://api-docs.deepseek.com/zh-cn/quick_start/pricing) on 2026-10-14; time-window rules were checked on 2026-11-01. Rates are CNY per million tokens. After a successful update, new requests use the retrieved rates:
 
 | Model | Uncached input (off-peak/peak) | Cached input (off-peak/peak) | Output (off-peak/peak) |
 | --- | --- | --- | --- |
 | Flash | 1 / 2 | 0.02 / 0.04 | 4 / 8 |
 | Pro | 4.5 / 9 | 0.15 / 0.30 | 13.5 / 27 |
 
-Cost = ((input minus cached input) × input rate + cached input × cache rate + output × output rate) / one million. The range avoids guessing Chinese public holidays; it is not an actual bill, credit deduction, or subscription charge.
+Cost = ((input minus cached input) × selected input rate + cached input × selected cache rate + output × selected output rate) / one million. This estimate is not an actual bill, credit deduction, or subscription charge.
+
+- Use Beijing time: Monday–Friday 09:00–12:00 and 14:00–18:00 are peak windows, with inclusive starts and exclusive ends. Weekends and official holidays are off-peak. Weekend makeup workdays remain off-peak because the official tariff explicitly includes weekends.
+- Holidays follow the [State Council's published 2026 day-off periods](https://www.beijing.gov.cn/zhengce/zhengcefagui/202511/t20251104_4258873.html). The bundled calendar currently covers 2026. For uncovered years, weekends and times outside peak windows remain determinable; requests whose tier depends on an unknown holiday calendar remain unpriced until the calendar is updated.
+- New records save `startedAt`, the selected tier and the price snapshot. Requests crossing a rate boundary or midnight use their start time for costs and calendar-day grouping. Legacy records use their existing completion timestamp with a visible assumption count; original records are not rewritten.
 
 - Official `deepseek` / `deepseek-account` Flash and Pro use their respective rates; official Flash aliases use Flash rates. Other providers/models are excluded.
 - Older 0.1.6/0.1.7 records have no model identifier. Keep them unchanged and label their estimates as assuming Flash. If a different model was used, this assumption does not apply.
-- Missing usage, unknown pricing, or requests before the rate's effective date are excluded, not counted as free. Partially priced periods are marked. Per-request ranges are summed.
+- Missing usage, unknown prices/tiers, or requests before the rate's effective date are excluded, not counted as free. Partially priced periods are marked. Individual request amounts are summed.
 - New requests freeze a complete price snapshot before generation. Updating during a request does not change its cost; older requests retain their original rates, including the built-in versions used by 0.1.8.
 - Small amounts use up to six decimal places. Nonzero amounts below ¥0.000001 remain visible.
 
@@ -181,7 +185,8 @@ Desktop plugins use DSH's bundled runtime. These Node checks do not replace desk
 src/common.mjs       RPC contract, context compression, keyboard safeguards
 src/engine.mjs       Model requests, budget, cache, and timeout
 src/usage.mjs        Persistent usage records and calendar-day aggregation
-src/pricing.mjs      Versioned CNY rates and cost-range calculations
+src/pricing.mjs      Versioned CNY rates and scalar cost calculations
+src/billing-calendar.mjs Beijing billing windows and official holidays
 src/price-updates.mjs Official HTML parsing, scheduled checks and price cache
 src/index.mjs        Host service registration
 src/client.cjs       Gray suggestion, scheduling, draft insertion
@@ -197,9 +202,10 @@ The implementation uses official Typert/Gateway RPC, `llm.stream`, the `conversa
 
 ## Validation scope
 
+- Version `0.1.19` calculates one amount from each request's start time, holidays and saved prices. Legacy records remain intact with a visible completion-time assumption. Checks cover rate boundaries, timezones, holidays, midnight, price updates, missing calendars and mixed Host/Client versions.
 - Version `0.1.18` fixes the exact-version-list rejection on DSH `0.2.1-rc.5`. Its range and boundaries pass both the compatibility evaluator shipped in rc.5 and npm's default SemVer rules. Recommendation, usage, price update and restart RPC checks pass against the new official libraries, using a stub model and price response. Desktop visual and real IME acceptance have not been repeated in this round.
 - Version `0.1.17` fixes the load rejection caused by `0.1.16` pinning the old DSH version. It explicitly supports `0.2.0-rc.2` and `0.2.1-rc.2` and passes the compatibility evaluator shipped in the new DSH. New Cordis, Typert, Host/Client Gateway and home-paths libraries verify recommendation RPC, usage, costs, price updates, schedule saving and restart recovery using a stub model and price response. Real records are unchanged; full desktop visual and real IME acceptance have not been repeated on the new release.
-- Node 22.23.3 and 24.16.0 each pass 66 automated tests, covering recommendation interaction, placeholder lifecycle, usage/lifetime deduplication, date boundaries, costs, price updates, schedule persistence/failure/restart and statistics disposal. Version 0.1.18 verified on 2026-11-01.
+- Node 22.23.3 and 24.16.0 each pass 79 automated tests, covering recommendation interaction, placeholder lifecycle, usage/lifetime deduplication, date boundaries, scalar costs, holidays, price updates, schedule persistence/failure/restart and statistics disposal. Version 0.1.19 verified on 2026-11-01.
 - Version `0.1.16` fixes duplicate model calls for concurrent identical requests, overlapping suggestions from duplicate composer mounts, and incorrectly cleared corrupt-price-cache warnings. Both Node versions pass RPC, cache accounting and restart checks using actual rc.2 libraries with a stub model; desktop visual acceptance remains separate.
 - Actual plugin fiber mounting, RPC, and disposal were verified using Cordis, Typert, and Host/Client Gateway from the official rc.2 installation, with a stub model.
 - Version `0.1.2` was tested in the real rc.2 desktop app for generation, display, first-Enter insertion, editing, Shift+Enter line breaks, sending, Escape, and session switching.

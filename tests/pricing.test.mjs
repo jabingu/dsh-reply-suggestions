@@ -15,8 +15,8 @@ const identified = (model = 'deepseek-flash', provider = 'deepseek-account') => 
 
 test('CNY estimates price cached input once and use separate Flash/Pro output rates', () => {
   const flash = estimateCost(event('flash', identified()));
-  assert.deepEqual(flash, { minCny: 5.02, maxCny: 10.04, assumed: false });
-  assert.deepEqual(estimateCost(event('pro', identified('deepseek-v4-pro'))), { minCny: 18.15, maxCny: 36.3, assumed: false });
+  assert.deepEqual(flash, { cny: 10.04, minCny: 10.04, maxCny: 10.04, tier: 'peak', assumed: false, timeAssumed: true });
+  assert.deepEqual(estimateCost(event('pro', identified('deepseek-v4-pro'))), { cny: 36.3, minCny: 36.3, maxCny: 36.3, tier: 'peak', assumed: false, timeAssumed: true });
   assert.equal(priceProfile('deepseek', 'deepseek-v4-flash'), priceProfile('deepseek-account', 'deepseek-flash'));
   assert.equal(priceProfile('openrouter', 'deepseek-flash'), null);
   assert.equal(priceProfile('deepseek-custom', 'deepseek-flash'), null);
@@ -41,10 +41,10 @@ test('Mixed models and legacy costs follow calendar periods, deduplication, and 
     event('yesterday', { ...identified(), at: '2026-10-13T02:00:00Z' })], options);
   assert.equal(result.periods[0].requests, 5);
   const cost = result.periods[0].cost;
-  assert.ok(Math.abs(cost.minCny - 28.19) < 1e-12);
+  assert.ok(Math.abs(cost.cny - 56.38) < 1e-12);
   assert.equal(cost.pricedRequests, 3); assert.equal(cost.assumedRequests, 1); assert.equal(cost.unpricedRequests, 2);
-  assert.equal(result.periods[1].cost.minCny, 5.02);
-  assert.ok(Math.abs(result.periods[2].cost.minCny - 33.21) < 1e-12);
+  assert.equal(result.periods[1].cost.cny, 10.04);
+  assert.ok(Math.abs(result.periods[2].cost.cny - 66.42) < 1e-12);
   assert.equal(result.pricing.currency, 'CNY');
 });
 
@@ -61,7 +61,7 @@ test('Model and price version survive reload without storing context or changing
   assert.equal(records[1].provider, undefined);
   assert.deepEqual(Object.keys(records[0]).sort(), ['at', 'id', 'model', 'priceProfile', 'provider', 'status', 'usage', 'version']);
   const result = await createUsageStore(file, { clock: () => now, timeZone: 'UTC' }).snapshot();
-  assert.equal(result.periods[0].cost.minCny, 10.04); assert.equal(result.periods[0].cost.assumedRequests, 1);
+  assert.equal(result.periods[0].cost.cny, 20.08); assert.equal(result.periods[0].cost.assumedRequests, 1);
 });
 
 test('The recorded model is the model actually requested after configuration overrides', async () => {

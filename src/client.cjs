@@ -246,10 +246,13 @@ function UsagePanel({ getUsage, updatePrices, setPriceSchedule }) {
         h('p', { style: note }, `输入（含缓存）${formatTokens(period.inputTokens)} · 输出 ${formatTokens(period.outputTokens)}`),
         period.cost && h('p', { 'data-usage-cost': period.id, style: { ...note, opacity: 0.9 } },
           period.cost.pricedRequests || period.requests === 0
-            ? `估算费用 ${formatCost(period.cost.minCny)}～${formatCost(period.cost.maxCny)}${period.cost.unpricedRequests ? '（部分）' : ''}`
+            ? period.cost.cny !== undefined || period.cost.minCny === period.cost.maxCny
+              ? `估算费用 ${formatCost(period.cost.cny ?? period.cost.minCny)}${period.cost.unpricedRequests ? '（部分）' : ''}`
+              : '估算费用：请重启 DSH 以更新计费'
             : '估算费用：暂无可估算记录'),
         period.cost?.assumedRequests > 0 && h('p', { style: note }, `历史 ${format(period.cost.assumedRequests)} 次按 Flash 假设估算`),
-        period.cost?.unpricedRequests > 0 && h('p', { style: note }, `未计入费用 ${format(period.cost.unpricedRequests)} 次（模型/价格或用量未知）`),
+        period.cost?.legacyTimeRequests > 0 && h('p', { style: note }, `历史 ${format(period.cost.legacyTimeRequests)} 次按记录时间估算时段`),
+        period.cost?.unpricedRequests > 0 && h('p', { style: note }, `未计入费用 ${format(period.cost.unpricedRequests)} 次（模型、价格、用量或节假日日历未知）`),
         h('p', { style: note }, `请求 ${format(period.requests)} 次 · 未返回用量 ${format(period.unknownRequests)} 次`),
         (period.failedRequests + period.cancelledRequests > 0) && h('p', { style: note },
           `失败 ${format(period.failedRequests)} 次 · 取消 ${format(period.cancelledRequests)} 次`)))),
@@ -258,8 +261,10 @@ function UsagePanel({ getUsage, updatePrices, setPriceSchedule }) {
     snapshot && h('div', { style: { marginTop: '10px' } },
       h('p', { style: note }, `仅统计本插件的推荐请求；缓存命中不重复计数。历史总量包含开始记录以来的全部有效记录；近 7/30 天含今天，按 ${snapshot.timeZone} 的自然日汇总。`),
       snapshot.pricing && h('p', { style: note },
-        `费用按人民币 API 公开价估算，范围为空闲～高峰价，不代表实际账单或套餐扣费。价格核对：${snapshot.pricing.checkedAt}。`,
+        `费用按每次请求的北京时间、节假日及当时价格计算，不代表实际账单或套餐扣费。价格核对：${snapshot.pricing.checkedAt}。`,
         h('a', { href: snapshot.pricing.source, target: '_blank', rel: 'noreferrer', style: { color: 'inherit' } }, '官方价格表')),
+      snapshot.pricing?.holidayYears && h('p', { style: note },
+        `节假日日历覆盖 ${snapshot.pricing.holidayYears.join('、')} 年；未覆盖年份若无法确定时段，该请求费用标为未知。`),
       updatePrices && snapshot.pricing && h('div', { 'data-price-updates': '', style: { marginTop: '10px' } },
         setPriceSchedule && h('label', { style: { display: 'inline-flex', alignItems: 'center', gap: '8px', margin: '0 12px 8px 0', fontSize: '13px' } },
           '自动更新周期',

@@ -1,6 +1,6 @@
 {
   "name": "dsh-reply-suggestions",
-  "version": "0.1.18",
+  "version": "0.1.19",
   "icon": "./icon.png",
   "description": "Suggest your next question from the conversation. Press Enter to fill it in, then edit and send.",
   "type": "module",

@@ -1,5 +1,5 @@
+import { billingTier, BILLING_RULE } from './billing-calendar.mjs';
 // Official CNY prices checked 2026-10-14. Keep versioned tables when adding future rates.
-// Range = off-peak..peak; no guessed holiday calendar or currency conversion.
 export const PRICE_SOURCE = 'https://api-docs.deepseek.com/zh-cn/quick_start/pricing';
 export const PRICE_CHECKED_AT = '2026-10-14';
 const FLASH = 'deepseek-flash-cny-2026-10-14';
@@ -42,10 +42,16 @@ export function estimateCost(event) {
     const id = assumed ? FLASH : event.priceProfile;
     snapshot = Object.values(BUILTIN_RATES).find(value => value.id === id);
   }
-  if (!snapshot || Date.parse(event.at) < Date.parse(snapshot.from)) return null;
+  const at = event.startedAt ?? event.at;
+  if (!snapshot || !Number.isFinite(Date.parse(at)) || Date.parse(at) < Date.parse(snapshot.from)) return null;
+  if (event.startedAt !== undefined && event.billingRule !== BILLING_RULE) return null;
+  const tier = event.startedAt !== undefined && event.billingRule === BILLING_RULE
+    && ['offPeak', 'peak'].includes(event.billingTier) ? event.billingTier : billingTier(at);
+  if (!tier) return null;
   const { inputTokens, outputTokens, cacheReadTokens } = event.usage;
   if (cacheReadTokens > inputTokens) return null;
-  const cost = rate => ((inputTokens - cacheReadTokens) * rate.input
+  const rate = snapshot[tier];
+  const cny = ((inputTokens - cacheReadTokens) * rate.input
     + cacheReadTokens * rate.cache + outputTokens * rate.output) / 1e6;
-  return { minCny: cost(snapshot.offPeak), maxCny: cost(snapshot.peak), assumed };
+  return { cny, minCny: cny, maxCny: cny, tier, assumed, timeAssumed: event.startedAt === undefined };
 }

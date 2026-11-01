@@ -14,7 +14,7 @@ const options = { now, timeZone: 'Asia/Shanghai' };
 const event = (id, at, value = usage, status = 'complete') => ({ version: 1, id, at, usage: value, status });
 const input = { sessionId: 'a', replyId: '1', provider: 'deepseek-account', model: 'deepseek-flash',
   user: 'PRIVATE_USER_CONTEXT', assistant: 'PRIVATE_ASSISTANT_CONTEXT' };
-const recorded = (usage, status) => ({ usage, status, provider: input.provider, model: input.model });
+const recorded = (usage, status) => ({ usage, status, provider: input.provider, model: input.model, startedAt: now.toISOString() });
 async function fixture() {
   const root = fileURLToPath(new URL('../work/usage-tests/', import.meta.url));
   await mkdir(root, { recursive: true });
@@ -55,7 +55,7 @@ test('Lifetime totals count old records once, include unknown costs honestly and
   assert.equal(value.lifetime.requests, 3); assert.equal(value.lifetime.unknownRequests, 1);
   assert.equal(value.lifetime.failedRequests, 1); assert.equal(value.lifetime.cancelledRequests, 1);
   assert.equal(value.lifetime.cost.pricedRequests, 2); assert.equal(value.lifetime.cost.unpricedRequests, 1);
-  assert.ok(Math.abs(value.lifetime.cost.minCny - 0.0003208) < 1e-12);
+  assert.ok(Math.abs(value.lifetime.cost.cny - 0.0004812) < 1e-12);
   assert.equal(value.unreadableRecords, 1);
   const futureOnly = summarizeUsage([event('future', '2026-10-15T00:00:00Z')], options);
   assert.equal(futureOnly.lifetime.requests, 0); assert.equal(futureOnly.trackingSince, null);
@@ -127,7 +127,7 @@ test('Recommendations count one final usage per actual request; cache and skippe
     calls++; yield { type: 'usage', usage: { inputTokens: 10, outputTokens: 0 } };
     yield { type: 'text-delta', index: 0, text: '请举例。' };
     yield { type: 'usage', usage: raw }; yield { type: 'usage', usage: raw };
-  } }, {}, { async record(value) { records.push(value); } });
+  } }, {}, { requestTime: () => now.toISOString(), async record(value) { records.push(value); } });
   await recommend(input); await recommend(input);
   assert.equal(calls, 1); assert.equal(records.length, 1); assert.deepEqual(records[0], recorded(usage, 'complete'));
   await assert.rejects(recommend({ ...input, model: '' })); assert.equal(records.length, 1);
@@ -138,7 +138,7 @@ test('Recommendations count one final usage per actual request; cache and skippe
 });
 
 test('Missing usage, rejected output and failed/cancelled streams retain honest accounting', async () => {
-  const records = []; const recorder = { async record(value) { records.push(value); } };
+  const records = []; const recorder = { requestTime: () => now.toISOString(), async record(value) { records.push(value); } };
   await createRecommender({ async *stream() { yield { type: 'text-delta', index: 0, text: '请继续。' }; } }, {}, recorder)(input);
   assert.deepEqual(records.pop(), recorded(null, 'complete'));
   await assert.rejects(createRecommender({ async *stream() { yield { type: 'usage', usage: raw }; throw Error('network'); } }, {}, recorder)(input), /network/);
