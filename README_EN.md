@@ -8,8 +8,8 @@ A composer suggestion plugin for [DeepSeek Harness](https://github.com/deepseek-
 
 | Item | Current version |
 | --- | --- |
-| Plugin | `0.1.20` |
-| Verified official desktop versions | `0.2.0-rc.2`, `0.2.1-rc.2`, `0.2.1-rc.5` |
+| Plugin | `0.1.21` |
+| Verified official desktop versions | `0.2.0-rc.2`, `0.2.1-rc.2`, `0.2.1-rc.5`, `0.2.2-rc.1` |
 | License | [MIT](./LICENSE) |
 
 ## Features
@@ -33,7 +33,7 @@ Generated from the actual 0.1.16 client using its test fixture, then placed in a
 ### Install from GitHub
 
 1. Open **Plugins** in DSH and check whether `dsh-reply-suggestions` is already installed. If it is, use the update action rather than adding it again.
-2. Confirm that the official desktop version falls within the compatibility range below. Version `0.2.1-rc.5` has been checked.
+2. Confirm that the official desktop version falls within the compatibility range below. Version `0.2.2-rc.1` has been checked.
 3. Select **Add plugin** and enter this repository address:
 
    ```text
@@ -43,9 +43,9 @@ Generated from the actual 0.1.16 client using its test fixture, then placed in a
 4. Follow the app's prompts to load and enable the plugin, then restart DSH.
 5. Complete a regular conversation turn, leave the composer empty, and wait for a gray suggestion.
 
-The repository includes prebuilt `lib/` files, so a manual build is unnecessary. The DSH peer range is `0.2.0-rc.2 || >=0.2.1-rc.2 <0.2.2-0`: it retains the old rc.2 and accepts the 0.2.1 release line from `0.2.1-rc.2`, including later RCs and stable `0.2.1`. All `0.2.2` prereleases and stable releases require a separate interface review.
+The repository includes prebuilt `lib/` files, so a manual build is unnecessary. The DSH peer range is `0.2.0-rc.2 || >=0.2.1-rc.2 <0.2.2-0 || >=0.2.2-rc.1 <0.2.3-0`: it retains the previous range and adds the 0.2.2 release line from `0.2.2-rc.1`, including later RCs and stable `0.2.2`. All `0.2.3` prereleases and stable releases require a separate interface review. The Cordis range is `~4.0.4 || ~4.1.0`, including `4.1.0` bundled with the new DSH.
 
-If DSH `0.2.1-rc.5` reports that an old plugin is incompatible, update the plugin to the current version, fully exit DSH, then restart it. For a linked local installation, update the linked directory and restart. Existing usage records are retained. Later RCs in the same line are no longer blocked solely by their version number; the versions actually checked are listed above.
+If DSH `0.2.2-rc.1` reports that an old plugin is incompatible, update the plugin to the current version, fully exit DSH, then restart it. For a linked local installation, update the linked directory and restart. Existing usage records are retained. Later RCs in the same line are no longer blocked solely by their version number; the versions actually checked are listed above.
 
 ### Install from a local directory
 
@@ -208,6 +208,7 @@ The implementation uses official Typert/Gateway RPC, `llm.stream`, the `conversa
 
 ## Validation scope
 
+- Version `0.1.21` supports DSH `0.2.2-rc.1` and its Cordis `4.1.0`. Checks use the bundled compatibility evaluator, native file locks and Host/Client RPC libraries to verify loading, recommendations, usage, costs, price updates and restart recovery, with a stub model and price response. Node 22/24 each pass 93 tests. Desktop visual and real IME acceptance have not been repeated.
 - Version `0.1.20` limits details to 30 calendar days while preserving cumulative totals. Tests cover day boundaries, repeated cleanup, aggregate merging, concurrency, failed writes and corrupt logs. Real DSH lock helpers verify two independent writer processes and dead-writer lock recovery.
 - Version `0.1.19` calculates one amount from each request's start time, holidays and saved prices. Legacy records remain intact with a visible completion-time assumption. Checks cover rate boundaries, timezones, holidays, midnight, price updates, missing calendars and mixed Host/Client versions.
 - Version `0.1.18` fixes the exact-version-list rejection on DSH `0.2.1-rc.5`. Its range and boundaries pass both the compatibility evaluator shipped in rc.5 and npm's default SemVer rules. Recommendation, usage, price update and restart RPC checks pass against the new official libraries, using a stub model and price response. Desktop visual and real IME acceptance have not been repeated in this round.
