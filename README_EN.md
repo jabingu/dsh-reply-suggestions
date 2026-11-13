@@ -8,7 +8,7 @@ A composer suggestion plugin for [DeepSeek Harness](https://github.com/deepseek-
 
 | Item | Current version |
 | --- | --- |
-| Plugin | `0.1.21` |
+| Plugin | `0.1.22` |
 | Verified official desktop versions | `0.2.0-rc.2`, `0.2.1-rc.2`, `0.2.1-rc.5`, `0.2.2-rc.1` |
 | License | [MIT](./LICENSE) |
 
@@ -43,7 +43,7 @@ Generated from the actual 0.1.16 client using its test fixture, then placed in a
 4. Follow the app's prompts to load and enable the plugin, then restart DSH.
 5. Complete a regular conversation turn, leave the composer empty, and wait for a gray suggestion.
 
-The repository includes prebuilt `lib/` files, so a manual build is unnecessary. The DSH peer range is `0.2.0-rc.2 || >=0.2.1-rc.2 <0.2.2-0 || >=0.2.2-rc.1 <0.2.3-0`: it retains the previous range and adds the 0.2.2 release line from `0.2.2-rc.1`, including later RCs and stable `0.2.2`. All `0.2.3` prereleases and stable releases require a separate interface review. The Cordis range is `~4.0.4 || ~4.1.0`, including `4.1.0` bundled with the new DSH.
+The repository includes prebuilt `lib/` files, so a manual build is unnecessary. DSH uses the top-level `engines.dsh` range to decide whether to load the plugin. The DSH peer dependencies declare the same range for npm and older hosts: `0.2.0-rc.2 || >=0.2.1-rc.2 <0.2.2-0 || >=0.2.2-rc.1 <0.2.3-0`. This accepts the 0.2.2 release line from `0.2.2-rc.1`, including later RCs and stable `0.2.2`. All `0.2.3` prereleases and stable releases require a separate interface review. The Cordis range is `~4.0.4 || ~4.1.0`, including `4.1.0` bundled with the new DSH.
 
 If DSH `0.2.2-rc.1` reports that an old plugin is incompatible, update the plugin to the current version, fully exit DSH, then restart it. For a linked local installation, update the linked directory and restart. Existing usage records are retained. Later RCs in the same line are no longer blocked solely by their version number; the versions actually checked are listed above.
 

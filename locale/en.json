@@ -1,6 +1,7 @@
 {
   "meta": {
     "title": "Reply Suggestions",
-    "description": "Suggest your next question from the conversation. Press Enter to fill it in, then edit and send."
+    "description": "Suggest your next question from the conversation. Press Enter to fill it in, then edit and send.",
+    "detail": "locale/detail.en.md"
   }
 }

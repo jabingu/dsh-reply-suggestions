@@ -1,11 +1,12 @@
 {
   "name": "dsh-reply-suggestions",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "icon": "./icon.png",
   "description": "Suggest your next question from the conversation. Press Enter to fill it in, then edit and send.",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=22",
+    "dsh": "0.2.0-rc.2 || >=0.2.1-rc.2 <0.2.2-0 || >=0.2.2-rc.1 <0.2.3-0"
   },
   "main": "lib/index.mjs",
   "exports": {
@@ -43,6 +44,7 @@
     "icon.png",
     "lib",
     "locale/*.json",
+    "locale/detail.*.md",
     "cordis.patch.yml",
     "README.md",
     "LICENSE",

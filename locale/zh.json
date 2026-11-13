@@ -1,6 +1,7 @@
 {
   "meta": {
     "title": "Reply Suggestions",
-    "description": "根据上一轮对话，自动推荐下一句提问。回车填入，编辑后再发送。"
+    "description": "根据上一轮对话，自动推荐下一句提问。回车填入，编辑后再发送。",
+    "detail": "locale/detail.zh.md"
   }
 }

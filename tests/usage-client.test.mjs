@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 import { summarizeUsage } from '../src/usage.mjs';
 
 async function mountUsage() {
-  let exported, section, injected, panel, props, tree, cursor = 0, dirty = false, effectQueue = [];
+  let exported, bundleSection, rowSection, panel, props, tree, cursor = 0, dirty = false, effectQueue = [];
   const hooks = [], pending = [], pricePending = [], schedulePending = [], intervals = new Map();
   let timerId = 0;
   function effect(fn, deps) {
@@ -40,12 +40,21 @@ async function mountUsage() {
       } },
     effect: fn => fn(), inject: (_names, fn) => fn(ctx), get: () => ctx.remote.replySuggestions,
     slots: { inject: (_name, fn) => fn(), register(options, component) {
-      if (options.name === 'plugins.detail.section') { section = component; injected = options.inject(); }
+      if (options.name === 'plugins.bundle.config') bundleSection = { options, component };
+      if (options.name === 'plugins.detail.section') rowSection = { options, component };
     } },
   };
   await exported.apply(ctx);
   function select(subject) {
-    const element = section({ subject, ...injected });
+    const detail = rowSection.component({ subject, ...rowSection.options.inject() });
+    if (subject.kind === 'bundle') {
+      assert.equal(detail, null, 'The trailing detail slot must not duplicate the bundle panel');
+      if (bundleSection.options.key !== subject.pkg.name) return null;
+      panel = bundleSection.component;
+      props = { view: 'page', ...bundleSection.options.inject() };
+      return { type: panel, props };
+    }
+    const element = detail;
     if (element) { panel = element.type; props = element.props; }
     return element;
   }

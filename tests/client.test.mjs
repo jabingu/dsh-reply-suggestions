@@ -63,7 +63,7 @@ async function mountClient(initialInput = {}, { headAvailable = true, sharedDom 
     effect(fn) { return fn(); },
     inject(names, fn) { assert.deepEqual(Array.from(names), ['remote.replySuggestions']); return fn(ctx); },
     get(name) { assert.equal(name, 'remote.replySuggestions'); return ctx.remote.replySuggestions; },
-    slots: { inject(name, fn) { assert.ok(['conversation.input.overlay', 'plugins.detail.section'].includes(name)); return fn(); },
+    slots: { inject(name, fn) { assert.ok(['conversation.input.overlay', 'plugins.bundle.config', 'plugins.detail.section'].includes(name)); return fn(); },
       register(options, value) { if (options.name === 'conversation.input.overlay') { component = value; props = options.inject(); } } },
   };
   await exports.apply(ctx);
